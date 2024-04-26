@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import torch.nn as nn
 class SelfAttention(nn.Module):
     def __init__(self, embed_size, heads):
@@ -7,10 +8,10 @@ class SelfAttention(nn.Module):
         self.heads = heads
         self.head_dim = embed_size // heads
 
-        assert(self.head_dim * heads = embed_size), "Embed size needs to be divisible by heads"
+        assert(self.head_dim * heads == embed_size), "Embed size needs to be divisible by heads"
         self.keys = nn.Linear(self.head_dim, self.head_dim, bias = False)
         self.values = nn.Linear(self.head_dim, self.head_dim, bias = False)
-        self.queries = nn.Linear(self.head_dim, self.head_dim, bais = False)
+        self.queries = nn.Linear(self.head_dim, self.head_dim, bias = False)
         self.fc_out = nn.Linear(heads * self.head_dim, embed_size)
 
     def forward(self, values, keys, query, mask):
@@ -46,7 +47,7 @@ class TransformerBlock(nn.Module):
         self.norm2 = nn.LayerNorm(embed_size)
         self.feed_forward = nn.Sequential(
             nn.Linear(embed_size, forward_expansion * embed_size),
-            nn.Relu(),
+            nn.ReLu(),
             nn.Linear(forward_expansion * embed_size, embed_size)
         )
 
@@ -71,7 +72,7 @@ class Encoder(nn.Module):
                 dropout, 
                 max_length):
         
-        super(Encoder, self).__init___()
+        super(Encoder, self).__init__()
         self.embed_size = embed_size
         self.heads = heads
         self.dropout = dropout
@@ -139,7 +140,7 @@ class Decoder(nn.Module):
                  max_length):
         super(Decoder, self).__init__()
         self.device = device
-        self.word_embedding = nn.embedding(trg_vocab_size, embed_size)
+        self.word_embedding = nn.Embedding(trg_vocab_size, embed_size)
         self.position_embedding = nn.Embedding(max_length, embed_size, dropout, device)
         self.layers = nn.ModuleList(
             [
@@ -162,7 +163,7 @@ class Decoder(nn.Module):
         return out
     
 class Transformer(nn.Module):
-    def __init__(self, src_vocab_size, trg_vocab_size, src_pad_idx, trg_pad_idx, embed_size = 512, num_layers = 6, forward_expansion =4, heads, dropout, device, max_length = 100):
+    def __init__(self, src_vocab_size, trg_vocab_size, src_pad_idx, trg_pad_idx, device, embed_size = 512, num_layers = 6, forward_expansion =4,heads = 8, dropout = 0, max_length = 100):
         super(Transformer, self).__init__()
         self.encoder = Encoder(src_vocab_size, 
                                embed_size, 
@@ -199,6 +200,8 @@ class Transformer(nn.Module):
         out = self.decoder(y, enc, src_mask, trg_mask)
         return out
     
+import torch.nn as nn
+
     
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
