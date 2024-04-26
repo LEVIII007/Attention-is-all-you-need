@@ -164,11 +164,33 @@ class Decoder(nn.Module):
 class Transformer(nn.Module):
     def __init__(self, src_vocab_size, trg_vocab_size, src_pad_idx, trg_pad_idx, embed_size = 512, num_layers = 6, forward_expansion =4, heads, dropout, device, max_length = 100):
         super(Transformer, self).__init__()
-        self.encoder = Encoder(src_vocab_size, embed_size, num_layers, heads, device, forward_expansion, dropout, max_length)
-        self.decoder = Decoder(trg_vocab_size, embed_size, num_layers, heads, forward_expansion, dropout, device, max_length)
+        self.encoder = Encoder(src_vocab_size, 
+                               embed_size, 
+                               num_layers, 
+                               heads, 
+                               device, 
+                               forward_expansion, 
+                               dropout, 
+                               max_length)
+        self.decoder = Decoder(trg_vocab_size, 
+                               embed_size, 
+                               num_layers, 
+                               heads, 
+                               forward_expansion, 
+                               dropout, 
+                               device, 
+                               max_length)
         self.src_pad_idx = src_pad_idx
         self.trg_pad_idx = trg_pad_idx
         self.device = device
+
+    def make_src_mask(self, x):
+        src_mask = (x != self.src_pad_idx).unsqeeze(1).unsqeeze(2)
+        return src_mask.to(self.device)
+    def make_trg_mask(self, y):
+        N, trg_len = y.shape
+        trg_mask = torch.tril(torch.ones(trg_len, trg_len)).expand(N, 1, trg_len, trg_len)
+        return trg_mask.to(self.device)
 
     def forward(x, y, self):
         src_mask = self.make_src_mask(x)
@@ -176,14 +198,19 @@ class Transformer(nn.Module):
         enc = self.encoder(x, src_mask)
         out = self.decoder(y, enc, src_mask, trg_mask)
         return out
+    
+    
+if __name__ == "__main__":
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    x = torch.tensor([[1,5,6,4,3,9,5,2,0], [1,8,7,3,4,5,6,7,2]]).to(device)
+    trg = torch.tensor([[1,7,4,3,5,9,2,0], [1,5,6,2,4,7,6,2]]).to(device)
 
-
-
-
-
-
-
-
-
-
+    src_pad_idx = 0
+    trg_pad_idx = 0
+    src_vocab_size = 10
+    trg_vocab_size = 10
+    model = Transformer(src_vocab_size, trg_vocab_size, src_pad_idx, trg_pad_idx, device=device).to(device)
+    out = model(x, trg[:,:-1])
+    print(out)
+    print(out.shape)
